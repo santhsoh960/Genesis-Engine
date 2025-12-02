@@ -1,6 +1,10 @@
 # The Genesis Engine: Recursive AI Agent Workflow
 
 ## 🚀 Overview
+
+
+
+
 The Genesis Engine is an autonomous multi-agent system designed to bridge the gap between abstract human intent and concrete technical execution. Unlike standard chatbots, Genesis uses a "Chain of Thought" pipeline to Interpret, Build, and Optimize solutions without human intervention in the loop.
 
 ## 🧠 Architecture
