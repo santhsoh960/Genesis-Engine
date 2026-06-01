@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Genesis Engine | Interpreter, Constructor, Optimizer</title>
+  <meta name="description" content="A single-file Genesis Engine demo with three AI-style agents: Interpreter, Constructor, and Optimizer." />
+  <style>
+    :root{
+      --bg:#07111f;--bg2:#0b1730;--card:#0f1b33cc;--card2:#122140;
+      --text:#eaf2ff;--muted:#9fb2d4;--line:#23406e;--accent:#6ea8ff;--accent2:#7cf0c4;
+      --danger:#ff7c7c;--warn:#ffd479;--shadow:0 20px 60px rgba(0,0,0,.35);
+      --radius:20px;--radius2:14px;--max:1180px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:
+      radial-gradient(circle at top left, rgba(110,168,255,.18), transparent 30%),
+      radial-gradient(circle at top right, rgba(124,240,196,.12), transparent 28%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+      color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    a{color:inherit}
+    .wrap{max-width:var(--max);margin:0 auto;padding:28px 20px 40px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+    .brand{display:flex;align-items:center;gap:14px}
+    .logo{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:var(--shadow)}
+    .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+    h1{margin:.15rem 0 0;font-size:clamp(2rem,4vw,4.3rem);line-height:1.02}
+    .sub{max-width:720px;color:var(--muted);font-size:1.05rem;line-height:1.7;margin:14px 0 0}
+    .chiprow{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .chip{padding:9px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03);color:#dfe9ff;font-size:.92rem}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:stretch;margin-top:24px}
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card{padding:22px}
+    .metricgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+    .metric{padding:16px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    .metric b{display:block;font-size:1.2rem;margin-bottom:4px}
+    .metric span{color:var(--muted);font-size:.92rem}
+    .section{margin-top:20px}
+    .section h2{margin:0 0 12px;font-size:1.35rem}
+    .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+    .agent{padding:18px;border-radius:var(--radius2);border:1px solid rgba(255,255,255,.08);background:rgba(10,18,36,.55)}
+    .agent h3{margin:0 0 8px;font-size:1.1rem;display:flex;align-items:center;gap:10px}
+    .dot{width:10px;height:10px;border-radius:999px;background:var(--accent2);box-shadow:0 0 0 6px rgba(124,240,196,.12)}
+    .agent p,.agent li,.body{color:var(--muted);line-height:1.7}
+    .agent ul{margin:10px 0 0;padding-left:18px}
+    .builder{padding:22px}
+    label{display:block;font-weight:600;margin-bottom:8px}
+    textarea,input,select{width:100%;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(4,10,21,.65);color:var(--text);padding:14px 14px;font:inherit;outline:none}
+    textarea{min-height:138px;resize:vertical}
+    .controls{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .btnrow{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+    button{border:none;border-radius:14px;padding:13px 16px;font:inherit;font-weight:700;cursor:pointer;transition:.2s transform,.2s opacity}
+    button:hover{transform:translateY(-1px)}
+    .primary{background:linear-gradient(135deg,var(--accent),#8f7bff);color:#08101d}
+    .secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid rgba(255,255,255,.1)}
+    .output{margin-top:16px;display:grid;gap:14px}
+    .codebox{background:#050b16;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:#dbe8ff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92rem;line-height:1.6;min-height:120px}
+    .footer{margin-top:22px;padding:18px 0;color:var(--muted);font-size:.95rem;text-align:center}
+    .tag{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;background:rgba(124,240,196,.08);color:#d7fff1;border:1px solid rgba(124,240,196,.18)}
+    .warn{color:var(--warn)}
+    .bad{color:var(--danger)}
+    @media (max-width:900px){.hero,.grid2,.controls,.metricgrid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <div class="eyebrow">Genesis Engine</div>
+          <strong>Single-file interview demo</strong>
+        </div>
+      </div>
+      <div class="tag">Built for GitHub • HTML/CSS/JS only</div>
+    </div>
+
+    <section class="hero">
+      <div class="panel card">
+        <div class="eyebrow">Core concept</div>
+        <h1>Turn a vague prompt into a structured plan, a build output, and a refined final draft.</h1>
+        <p class="sub">This page demonstrates a three-agent workflow: The Interpreter converts raw intent into JSON, The Genesis Constructor creates the MVP, and The Optimizer critiques and improves the result.</p>
+        <div class="chiprow">
+          <span class="chip">Interpreter</span>
+          <span class="chip">Constructor</span>
+          <span class="chip">Optimizer</span>
+          <span class="chip">Responsive UI</span>
+          <span class="chip">Local-only demo</span>
+        </div>
+        <div class="metricgrid">
+          <div class="metric"><b>3</b><span>Agent stages</span></div>
+          <div class="metric"><b>1</b><span>Single HTML file</span></div>
+          <div class="metric"><b>0</b><span>External libraries</span></div>
+        </div>
+      </div>
+
+      <div class="panel builder">
+        <div class="eyebrow">Prompt console</div>
+        <h2 style="margin:8px 0 14px">Try the pipeline</h2>
+        <label for="promptInput">Raw user prompt</label>
+        <textarea id="promptInput">Build a website generator with three agents: Interpreter, Constructor, and Optimizer. I want to upload it to GitHub for an interview.</textarea>
+        <div class="controls" style="margin-top:14px">
+          <div>
+            <label for="toneSelect">Tone</label>
+            <select id="toneSelect">
+              <option>Analytical</option>
+              <option>Professional</option>
+              <option>Direct</option>
+              <option>Creative</option>
+            </select>
+          </div>
+          <div>
+            <label for="domainSelect">Primary domain</label>
+            <select id="domainSelect">
+              <option>Coding</option>
+              <option>Business/Strategy</option>
+              <option>Marketing</option>
+              <option>Creative Writing</option>
+            </select>
+          </div>
+        </div>
+        <div class="btnrow">
+          <button class="primary" id="runBtn">Generate blueprint</button>
+          <button class="secondary" id="fillBtn">Load sample interview brief</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section grid2">
+      <div class="panel card">
+        <h2>Interpreter output</h2>
+        <div class="body">This panel shows the JSON blueprint produced from the prompt. It is the handoff object for downstream agents.</div>
+        <div class="codebox" id="jsonOutput"></div>
+      </div>
+      <div class="panel card">
+        <h2>Constructor output</h2>
+        <div class="body">This panel simulates the MVP created from the blueprint. In a real pipeline, it would become code or strategy.</div>
+        <div class="codebox" id="buildOutput"></div>
+      </div>
+    </section>
+
+    <section class="section panel card">
+      <h2>Optimizer output</h2>
+      <div class="body">This final stage reviews the draft, points out weaknesses, and rewrites it into a more polished version.</div>
+      <div class="codebox" id="optOutput"></div>
+    </section>
+
+    <section class="section grid2">
+      <div class="panel card agent">
+        <h3><span class="dot"></span>Interpreter</h3>
+        <p>Extracts intent, constraints, domain, and execution steps from a messy prompt, then produces strict JSON for the next agent.</p>
+        <ul>
+          <li>Identifies the real goal.</li>
+          <li>Normalizes domain tags.</li>
+          <li>Outputs actionable structure.</li>
+        </ul>
+      </div>
+      <div class="panel card agent">
+        <h3><span class="dot"></span>Constructor</h3>
+        <p>Transforms the JSON into a first-pass MVP, choosing code or strategy based on the detected domain.</p>
+        <ul>
+          <li>Generates the deliverable.</li>
+          <li>Prioritizes speed and clarity.</li>
+          <li>Stays aligned to the blueprint.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section grid2">
+      <div class="panel card agent">
+        <h3><span class="dot"></span>Optimizer</h3>
+        <p>Critiques the draft against efficiency, profitability, and usability, then rewrites it to be production-ready.</p>
+        <ul>
+          <li>Finds flaws fast.</li>
+          <li>Improves readability.</li>
+          <li>Adds practical polish.</li>
+        </ul>
+      </div>
+      <div class="panel card agent">
+        <h3><span class="dot"></span>Interview-ready</h3>
+        <p>Designed to look clean in a GitHub repository and demonstrate product thinking, front-end skill, and workflow design in one page.</p>
+        <ul>
+          <li>Fully responsive layout.</li>
+          <li>Copyable demo output.</li>
+          <li>No build step required.</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="footer">Genesis Engine • Built as a polished single-file demo for interviews</div>
+  </div>
+
+  <script>
+    const promptInput = document.getElementById('promptInput');
+    const toneSelect = document.getElementById('toneSelect');
+    const domainSelect = document.getElementById('domainSelect');
+    const jsonOutput = document.getElementById('jsonOutput');
+    const buildOutput = document.getElementById('buildOutput');
+    const optOutput = document.getElementById('optOutput');
+
+    const sample = `Build a website generator with three agents: Interpreter, Constructor, and Optimizer. I want to upload it to GitHub for an interview.`;
+
+    function inferProfile(text){
+      const low = text.toLowerCase();
+      if (low.includes('github') || low.includes('interview')) return 'Job-seeking developer';
+      if (low.includes('business') || low.includes('startup')) return 'Founder or operator';
+      if (low.includes('marketing')) return 'Marketing-focused creator';
+      return 'Goal-driven user';
+    }
+
+    function inferDomain(text){
+      const low = text.toLowerCase();
+      if (low.includes('website') || low.includes('html') || low.includes('code') || low.includes('app')) return 'Coding';
+      if (low.includes('business') || low.includes('strategy') || low.includes('model')) return 'Business/Strategy';
+      if (low.includes('post') || low.includes('email') || low.includes('content')) return 'Marketing';
+      return domainSelect.value;
+    }
+
+    function generateBlueprint(text){
+      const domain = inferDomain(text);
+      const profile = inferProfile(text);
+      const core = domain === 'Coding'
+        ? 'Create a single-file front-end demo that visualizes a three-agent workflow and is suitable for GitHub presentation.'
+        : domain === 'Business/Strategy'
+          ? 'Create a structured business execution system that turns raw intent into a plan, a draft, and a refined output.'
+          : 'Create a content workflow that turns raw intent into structured output, first draft, and optimized final copy.';
+
+      return {
+        user_profile_guess: profile,
+        core_intent: core,
+        domain_tags: [domain, 'Workflow Design', 'Product Thinking', 'Frontend Demo'],
+        complexity_level: 'Medium',
+        required_agents: ['Interpreter', 'Constructor', 'Optimizer'],
+        action_plan_summary: [
+          'Step 1: Parse the user prompt and extract the real objective, constraints, and target domain.',
+          'Step 2: Generate a first-pass MVP that matches the domain and can be shown in an interview.',
+          'Step 3: Critique the draft, identify weaknesses, and rewrite it into a cleaner final version.'
+        ]
+      };
+    }
+
+    function generateBuild(bp){
+      if (bp.domain_tags.includes('Coding')) {
+        return [
+          'MVP: single-file HTML/CSS/JS app',
+          'Features: prompt input, tone/domain selectors, auto-generated blueprint, constructor draft, optimizer rewrite',
+          'Goal: demonstrate structured prompt-to-product thinking in a polished GitHub-ready demo'
+        ].join('\n\n');
+      }
+      if (bp.domain_tags.includes('Business/Strategy')) {
+        return [
+          'Business Model Canvas with customer segments, value proposition, channels, revenue streams, costs, and key metrics',
+          '30-day execution roadmap with weekly milestones and validation checkpoints',
+          'Goal: show strategic clarity and operational realism'
+        ].join('\n\n');
+      }
+      return [
+        'Content engine with post variants, email templates, and optimization rules',
+        'Tone-matched copy generation for different audiences',
+        'Goal: show repeatable content production and refinement'
+      ].join('\n\n');
+    }
+
+    function generateOptimization(build, bp){
+      return [
+        'Critique: 7/10 — the draft is clear, but it needs stronger differentiation, sharper UX, and tighter copy.',
+        'Flaw 1: The workflow is useful, but it should make the output feel more concrete for interview reviewers.',
+        'Flaw 2: The interface needs clearer hierarchy so the three-agent story is instantly understood.',
+        'Flaw 3: The final deliverable should emphasize polish, responsiveness, and low-friction usage.',
+        '',
+        'Final polish: Keep the single-file structure, strengthen visual hierarchy, improve the prompt examples, and make each agent output visibly distinct with better spacing and labels.'
+      ].join('\n');
+    }
+
+    function render(){
+      const bp = generateBlueprint(promptInput.value.trim());
+      const build = generateBuild(bp);
+      const opt = generateOptimization(build, bp);
+      jsonOutput.textContent = JSON.stringify(bp, null, 2);
+      buildOutput.textContent = build;
+      optOutput.textContent = opt;
+    }
+
+    document.getElementById('runBtn').addEventListener('click', render);
+    document.getElementById('fillBtn').addEventListener('click', () => {
+      promptInput.value = sample;
+      toneSelect.value = 'Analytical';
+      domainSelect.value = 'Coding';
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
